@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT AI Cybersecurity Operations Center (SOC)</title>
+  <!-- Chart.js CDN for Realtime Graph -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --border: #1f293d;
+      --accent-blue: #3b82f6;
+      --safe-green: #10b981;
+      --danger-red: #ef4444;
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 24px;
+    }
+    .soc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+    .soc-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .pulse-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--safe-green);
+      box-shadow: 0 0 10px var(--safe-green);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    .live-badge {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--safe-green);
+      border: 1px solid var(--safe-green);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Target Scanner Card */
+    .scanner-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 12px 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    .btn-scan {
+      background: var(--accent-blue);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .preset-chips {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+    .chip {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .chip:hover { border-color: var(--accent-blue); }
+
+    /* Metrics Grid */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .metric-box span { font-size: 12px; color: var(--text-sub); text-transform: uppercase; }
+    .metric-box h2 { margin: 8px 0 0 0; font-size: 26px; }
+
+    /* Middle Section: Chart + AI Confidence */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    /* Terminal Console */
+    .terminal-box {
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      color: #10b981;
+      height: 140px;
+      overflow-y: auto;
+    }
+
+    /* Security Checklist Badges */
+    .check-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .check-item {
+      background: #1e293b;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <div class="soc-header">
+    <div class="soc-title">
+      <div id="statusDot" class="pulse-dot"></div>
+      <div>
+        <h2 style="margin: 0; font-size: 20px;">AI Security Operations Center (SOC)</h2>
+        <span style="font-size: 12px; color: var(--text-sub);">IoT Endpoint Live Threat Monitor & Mitigation</span>
+      </div>
+    </div>
+    <div>
+      <span class="live-badge">REAL-TIME INFERENCE: ACTIVE</span>
+    </div>
+  </div>
+
+  <!-- Target Scanner & Demo Presets -->
+  <div class="scanner-card">
+    <div class="input-row">
+      <input type="text" id="targetInput" placeholder="Enter target domain or URL (e.g. 192.168.1.100/login)...">
+      <button class="btn-scan" onclick="submitScan()">Analyze Payload</button>
+    </div>
+    <div class="preset-chips">
+      <span>Demo Simulation Presets:</span>
+      <button class="chip" onclick="simulateAttack('safe')">🟢 Legitimate Traffic (Google)</button>
+      <button class="chip" onclick="simulateAttack('phishing')">🟡 Phishing Credential Scan</button>
+      <button class="chip" onclick="simulateAttack('botnet')">🔴 IoT Botnet DDoS Attack</button>
+    </div>
+  </div>
+
+  <!-- Top 4 Primary Telemetry Cards -->
+  <div class="grid-4">
+    <div class="metric-box">
+      <span>Threat Disposition</span>
+      <h2 id="threatState" style="color: var(--safe-green);">NORMAL</h2>
+    </div>
+    <div class="metric-box">
+      <span>AI Risk Probability</span>
+      <h2 id="riskScore">12%</h2>
+    </div>
+    <div class="metric-box">
+      <span>Packets Analyzed</span>
+      <h2 id="packetCount">1,420</h2>
+    </div>
+    <div class="metric-box">
+      <span>Bandwidth Throughput</span>
+      <h2 id="bandwidth">1.4 MB/s</h2>
+    </div>
+  </div>
+
+  <!-- Middle Grid: Live Chart + Heuristics -->
+  <div class="analytics-grid">
+    <div class="panel">
+      <h3 style="margin-top: 0; font-size: 15px; color: var(--text-sub);">Live Traffic Telemetry (Packet Surges / Sec)</h3>
+      <canvas id="trafficChart" height="110"></canvas>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top: 0; font-size: 15px; color: var(--text-sub);">Payload Heuristic Verification</h3>
+      <div class="check-list" style="display: flex; flex-direction: column;">
+        <div class="check-item"><span>SSL/TLS Layer</span><b id="sslCheck" style="color: var(--safe-green);">Valid</b></div>
+        <div class="check-item"><span>IP Anomaly</span><b id="ipCheck" style="color: var(--safe-green);">Resolved</b></div>
+        <div class="check-item"><span>Lexical Entropy</span><b id="entropyCheck" style="color: var(--safe-green);">Low</b></div>
+        <div class="check-item"><span>IoT Signature</span><b id="signatureCheck" style="color: var(--safe-green);">Clean</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOC Live Console Terminal Logs -->
+  <div class="panel">
+    <h3 style="margin-top: 0; font-size: 14px; color: var(--text-sub);">Kernel & Mitigation Telemetry Feed</h3>
+    <div class="terminal-box" id="terminalFeed"></div>
+  </div>
+
+  <script>
+    // 1. Initialize Chart.js
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    const chartData = {
+      labels: ['-12s', '-10s', '-8s', '-6s', '-4s', '-2s', 'Now'],
+      datasets: [{
+        label: 'Packets / Sec',
+        data: [15, 18, 12, 19, 14, 16, 20],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4
+      }]
+    };
+    const trafficChart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+        }
+      }
+    });
+
+    // 2. Update UI Logic
+    function updateUI(data) {
+      const isAttack = data.network_status === "UNDER ATTACK";
+      const threatColor = isAttack ? '#ef4444' : '#10b981';
+
+      document.getElementById('threatState').innerText = data.network_status;
+      document.getElementById('threatState').style.color = threatColor;
+
+      const dot = document.getElementById('statusDot');
+      dot.style.background = threatColor;
+      dot.style.boxShadow = `0 0 12px ${threatColor}`;
+
+      document.getElementById('riskScore').innerText = data.risk_score + '%';
+      document.getElementById('riskScore').style.color = threatColor;
+
+      document.getElementById('packetCount').innerText = data.packet_count.toLocaleString();
+      document.getElementById('bandwidth').innerText = data.bandwidth_mbps + ' MB/s';
+
+      // Security Badges
+      const checks = data.security_checks;
+      document.getElementById('sslCheck').innerText = checks.ssl_status;
+      document.getElementById('ipCheck').innerText = checks.ip_host;
+      document.getElementById('entropyCheck').innerText = checks.heuristic_entropy;
+      document.getElementById('signatureCheck').innerText = checks.iot_signature;
+
+      const checkColor = isAttack ? '#ef4444' : '#10b981';
+      document.getElementById('sslCheck').style.color = checkColor;
+      document.getElementById('ipCheck').style.color = checkColor;
+      document.getElementById('entropyCheck').style.color = checkColor;
+      document.getElementById('signatureCheck').style.color = checkColor;
+
+      // Terminal Logs Update
+      const terminal = document.getElementById('terminalFeed');
+      terminal.innerHTML = data.logs.map(log => {
+        let color = log.includes('CRITICAL') || log.includes('ALERT') ? '#ef4444' : '#10b981';
+        return `<div style="color: ${color}; margin-bottom: 4px;">${log}</div>`;
+      }).join('');
+      terminal.scrollTop = terminal.scrollHeight;
+
+      // Push Live Spike to Chart
+      const newPacketRate = isAttack ? Math.floor(Math.random() * 80) + 120 : Math.floor(Math.random() * 15) + 10;
+      trafficChart.data.datasets[0].data.shift();
+      trafficChart.data.datasets[0].data.push(newPacketRate);
+      trafficChart.data.datasets[0].borderColor = threatColor;
+      trafficChart.data.datasets[0].backgroundColor = isAttack ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.1)';
+      trafficChart.update();
+    }
+
+    // 3. API Dispatchers
+    async function submitScan() {
+      const url = document.getElementById('targetInput').value;
+      if (!url) return alert("Target URL enter pannunga!");
+      sendRequest({ url: url });
+    }
+
+    async function simulateAttack(type) {
+      if (type === 'safe') {
+        document.getElementById('targetInput').value = 'https://www.google.com';
+        sendRequest({ url: 'https://www.google.com', attack_type: 'safe' });
+      } else if (type === 'phishing') {
+        document.getElementById('targetInput').value = 'http://192.168.1.15/login-account-verify';
+        sendRequest({ url: 'http://192.168.1.15/login-account-verify', attack_type: 'phishing' });
+      } else if (type === 'botnet') {
+        document.getElementById('targetInput').value = 'http://malicious-iot-c2.ddns.net:8080/payload.bin';
+        sendRequest({ url: 'botnet-flood', attack_type: 'botnet' });
+      }
+    }
+
+    async function sendRequest(payload) {
+      try {
+        const res = await fetch('/check_target', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        updateUI(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Initial Fetch
+    fetch('/api/status').then(r => r.json()).then(updateUI);
+  </script>
+</body>
+</html>
